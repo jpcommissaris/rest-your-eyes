@@ -25,6 +25,7 @@ To bundle the app for distribution, use the `app.py` script. This will package t
   ```bash
   pip install -r requirements.txt
   ```
+- Allow the app in "focus" mode to make sure you see notifications
 
 ## Usage
 1. Clone the repository.
