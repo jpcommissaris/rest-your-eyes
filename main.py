@@ -29,14 +29,21 @@ class AppDelegate(NSObject):
         print("hello1")
 
         # Set up menu
-        self.menu = NSMenu.alloc().init()
+        self.menu = NSMenu.alloc().init() 
 
-        # Create pause/resume item
+        # Timer item
+        padded = f"Eyes will rest in...{' ' * 10}20:00"
+        self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
+
+        # Pause resume item
         self.pause_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Pause", "togglePause:", "")
         self.pause_item.setTarget_(self)
+
+        # Quit item
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit", "terminate:", "")
 
         # Add menu items
+        self.menu.addItem_(self.timer_item)
         self.menu.addItem_(self.pause_item)
         self.menu.addItem_(NSMenuItem.separatorItem())
         self.menu.addItem_(quit_item)
@@ -49,6 +56,9 @@ class AppDelegate(NSObject):
         print("👁️ Menu set")
         print("🧘‍♂️ COMPLETE")
 
+    @objc.IBAction
+    def noop_(self, sender):
+        pass
     
     @objc.IBAction
     def togglePause_(self, sender):
