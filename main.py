@@ -9,9 +9,13 @@ from Cocoa import (
     NSMenu,
     NSMenuItem,
     NSImage,
+    NSTextField,
+    NSMakeRect,
+    NSFont,
+    NSTimer,
+    NSView
 )
 from AppKit import NSFontWeightRegular
-from Foundation import NSTimer
 
 
 class AppDelegate(NSObject):
@@ -27,25 +31,34 @@ class AppDelegate(NSObject):
         status_bar = NSStatusBar.systemStatusBar()
         self.status_item = status_bar.statusItemWithLength_(NSVariableStatusItemLength)
         self.status_item.setHighlightMode_(True)
-        print("hello1")
 
         # Set up menu
         self.menu = NSMenu.alloc().init() 
 
         # Setup timer
         self.time_remaining = 20 * 60  # 20 minutes in seconds
-
         self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
-            1.0,                
-            self,               
-            "updateTimer:",     
-            None,
-            True                # repeats
+            1.0, self, "updateTimer:", None, True
         )
 
+        # Live-updating timer text field
+        container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 200, 24))  # total size
+        self.timer_text_field = NSTextField.alloc().initWithFrame_(NSMakeRect(12, 2, 196, 18))
+        self.timer_text_field.setBezeled_(False)
+        self.timer_text_field.setDrawsBackground_(False)
+        self.timer_text_field.setEditable_(False)
+        self.timer_text_field.setSelectable_(False)
+        self.timer_text_field.setFont_(NSFont.menuFontOfSize_(13))
+        self.timer_text_field.setAlignment_(0)  # Left aligned
+        self.timer_text_field.setStringValue_(f"Eyes will rest in...{' ' * 10}20:00")
+
+        container.addSubview_(self.timer_text_field)
+        self.timer_view_item = NSMenuItem.alloc().init()
+        self.timer_view_item.setView_(container)
+
         # Timer item
-        padded = f"Eyes will rest in...{' ' * 10}20:00"
-        self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
+        # padded = f"Eyes will rest in...{' ' * 10}20:00"
+        # self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
 
         # Conditional divider
         self.divider1 = NSMenuItem.separatorItem()
@@ -66,7 +79,7 @@ class AppDelegate(NSObject):
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit", "terminate:", "")
 
         # Add menu items
-        self.menu.addItem_(self.timer_item)
+        self.menu.addItem_(self.timer_view_item)
         self.menu.addItem_(self.divider1)
         self.menu.addItem_(self.pause_item) 
         self.menu.addItem_(self.reset_item)
@@ -98,19 +111,24 @@ class AppDelegate(NSObject):
 
     @objc.IBAction
     def updateTimer_(self, _):
+        # Tick or reset
         if self.time_remaining > 0:
             self.time_remaining -= 1
         else:
             self.timer.invalidate()
             self.timer = None
 
+        # Calculate time
         minutes = self.time_remaining // 60
         seconds = self.time_remaining % 60
-        time_str = f"{minutes:02d}:{seconds:02d}"
 
-        # Update the menu item
+        # Update menu item
+        time_str = f"{minutes:02d}:{seconds:02d}"
         padded = f"Eyes will rest in...{' ' * 10}{time_str}"
-        self.timer_item.setTitle_(padded)
+        self.timer_text_field.setStringValue_(padded)
+        self.timer_text_field.displayIfNeeded()
+        self.timer_text_field.setNeedsDisplay_(True) 
+        self.timer_text_field.superview().displayIfNeeded()
 
     def updateStatusIcon(self):
         symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
