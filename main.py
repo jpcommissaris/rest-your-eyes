@@ -6,147 +6,136 @@ from Cocoa import (
     NSApplication,
     NSStatusBar,
     NSVariableStatusItemLength,
-    NSMenu,
-    NSMenuItem,
     NSImage,
     NSTextField,
     NSMakeRect,
     NSFont,
     NSTimer,
-    NSView
+    NSView,
+    NSButton,
+    NSColor
 )
-from AppKit import NSFontWeightRegular
+from AppKit import NSFontWeightRegular, NSPopover, NSViewController, NSMenu
 
 
 class AppDelegate(NSObject):
-    # We do not need this. Use "user defaults" instead
     def applicationSupportsSecureRestorableState_(self, app):
-      return True
+        return True
 
     def applicationDidFinishLaunching_(self, notification):
         print("🧘‍♂️ Did finish launch")
         self.is_paused = False
 
-        # Create status bar ref.
-        status_bar = NSStatusBar.systemStatusBar()
-        self.status_item = status_bar.statusItemWithLength_(NSVariableStatusItemLength)
-        self.status_item.setHighlightMode_(True)
+        # Create status bar item
+        self.status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
+        self.status_item.button().setTitle_("👁️")
+        self.status_item.button().setTarget_(self)
+        self.status_item.button().setAction_("togglePopover:")
 
-        # Set up menu
-        self.menu = NSMenu.alloc().init() 
-
-        # Setup timer
-        self.time_remaining = 20 * 60  # 20 minutes in seconds
+        # Initialize timer values
+        self.time_remaining = 20 * 60
         self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             1.0, self, "updateTimer:", None, True
         )
 
-        # Live-updating timer text field
-        container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 200, 24))  # total size
-        self.timer_text_field = NSTextField.alloc().initWithFrame_(NSMakeRect(12, 2, 196, 18))
+        # Build the popover and its content
+        self.createPopover()
+        print("👁️ Popover ready")
+
+    def createPopover(self):
+        self.popover = NSPopover.alloc().init()
+        self.popover.setBehavior_(1)  # Transient
+        self.popover.setAnimates_(True)
+
+        # View Controller
+        controller = NSViewController.alloc().init()
+
+        # Container view
+        container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 220, 100))
+
+        # Timer label
+        self.timer_text_field = NSTextField.alloc().initWithFrame_(NSMakeRect(12, 60, 200, 24))
         self.timer_text_field.setBezeled_(False)
         self.timer_text_field.setDrawsBackground_(False)
         self.timer_text_field.setEditable_(False)
         self.timer_text_field.setSelectable_(False)
         self.timer_text_field.setFont_(NSFont.menuFontOfSize_(13))
-        self.timer_text_field.setAlignment_(0)  # Left aligned
-        self.timer_text_field.setStringValue_(f"Eyes will rest in...{' ' * 10}20:00")
-
+        self.timer_text_field.setAlignment_(0)
+        self.timer_text_field.setStringValue_("Eyes will rest in... 20:00")
         container.addSubview_(self.timer_text_field)
-        self.timer_view_item = NSMenuItem.alloc().init()
-        self.timer_view_item.setView_(container)
 
-        # Timer item
-        # padded = f"Eyes will rest in...{' ' * 10}20:00"
-        # self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
+        # Pause/resume button
+        self.pause_button = NSButton.alloc().initWithFrame_(NSMakeRect(12, 30, 100, 24))
+        self.pause_button.setTitle_("Pause")
+        self.pause_button.setTarget_(self)
+        self.pause_button.setAction_("togglePause:")
+        container.addSubview_(self.pause_button)
 
-        # Conditional divider
-        self.divider1 = NSMenuItem.separatorItem()
-        self.divider1.setTarget_(self)
-        self.divider1.setHidden_(True)
+        # Reset button
+        self.reset_button = NSButton.alloc().initWithFrame_(NSMakeRect(120, 30, 80, 24))
+        self.reset_button.setTitle_("Reset")
+        self.reset_button.setTarget_(self)
+        self.reset_button.setAction_("toggleReset:")
+        self.reset_button.setHidden_(True)
+        container.addSubview_(self.reset_button)
 
-        # Pause resume item
-        self.pause_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Pause", "togglePause:", "")
-        self.pause_item.setTarget_(self)
+        # Quit button
+        self.quit_button = NSButton.alloc().initWithFrame_(NSMakeRect(12, 5, 80, 20))
+        self.quit_button.setTitle_("Quit")
+        self.quit_button.setTarget_(self)
+        self.quit_button.setAction_("terminate:")
+        container.addSubview_(self.quit_button)
 
-        # Reset item
-        self.reset_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Reset", "toggleReset:", "")
-        self.reset_item.setTarget_(self) 
-        self.reset_item.setHidden_(True)
- 
-
-        # Quit item
-        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit", "terminate:", "")
-
-        # Add menu items
-        self.menu.addItem_(self.timer_view_item)
-        self.menu.addItem_(self.divider1)
-        self.menu.addItem_(self.pause_item) 
-        self.menu.addItem_(self.reset_item)
-        self.menu.addItem_(NSMenuItem.separatorItem())
-        self.menu.addItem_(quit_item)
-
-        # Init state (unpaused)
-        print("👁️ Initiating")
-        self.updateStatusIcon()
-
-        self.status_item.setMenu_(self.menu)
-        print("👁️ Menu set")
-        print("🧘‍♂️ COMPLETE")
+        controller.setView_(container)
+        self.popover.setContentViewController_(controller)
 
     @objc.IBAction
-    def noop_(self, sender):
-        pass
-    
+    def togglePopover_(self, sender):
+        if self.popover.isShown():
+            self.popover.performClose_(sender)
+        else:
+            self.popover.showRelativeToRect_ofView_preferredEdge_(
+                self.status_item.button().bounds(),
+                self.status_item.button(),
+                3  # NSMaxYEdge
+            )
+
     @objc.IBAction
     def togglePause_(self, sender):
         self.is_paused = not self.is_paused
+        self.pause_button.setTitle_("Resume" if self.is_paused else "Pause")
+        self.reset_button.setHidden_(not self.is_paused)
         self.updateStatusIcon()
-        self.resetClock()
-    
+
     @objc.IBAction
     def toggleReset_(self, sender):
+        self.time_remaining = 20 * 60
         self.is_paused = False
+        self.pause_button.setTitle_("Pause")
+        self.reset_button.setHidden_(True)
         self.updateStatusIcon()
 
     @objc.IBAction
     def updateTimer_(self, _):
-        # Tick or reset
-        if self.time_remaining > 0:
+        if not self.is_paused and self.time_remaining > 0:
             self.time_remaining -= 1
-        else:
+
+        minutes, seconds = divmod(self.time_remaining, 60)
+        time_str = f"Eyes will rest in... {minutes:02}:{seconds:02}"
+        self.timer_text_field.setStringValue_(time_str)
+
+        if self.time_remaining == 0 and self.timer:
             self.timer.invalidate()
             self.timer = None
 
-        # Calculate time
-        minutes = self.time_remaining // 60
-        seconds = self.time_remaining % 60
-
-        # Update menu item
-        time_str = f"{minutes:02d}:{seconds:02d}"
-        padded = f"Eyes will rest in...{' ' * 10}{time_str}"
-        self.timer_text_field.setStringValue_(padded)
-        self.timer_text_field.displayIfNeeded()
-        self.timer_text_field.setNeedsDisplay_(True) 
-        self.timer_text_field.superview().displayIfNeeded()
-
     def updateStatusIcon(self):
         symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
-        self.pause_item.setTitle_("Resume" if self.is_paused else "Pause")
-
         icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(symbol, None)
-        icon = icon or NSImage.imageWithSystemSymbolName_accessibilityDescription_("eye", None) # backup
         config = objc.lookUpClass("NSImageSymbolConfiguration").configurationWithPointSize_weight_(18, NSFontWeightRegular)
         icon = icon.imageWithSymbolConfiguration_(config)
         icon.setTemplate_(False)
-
         self.status_item.button().setImage_(icon)
-        self.reset_item.setHidden_(not self.is_paused)
-        self.divider1.setHidden_(not self.is_paused)
-        print(f"👁️ Updated Menu to {'PAUSED' if self.is_paused else 'ACTIVE'} state")
 
-    def resetClock(self): 
-        pass
 
 if __name__ == "__main__":
     print("🫡 Booting up...")
@@ -156,7 +145,3 @@ if __name__ == "__main__":
     app.setDelegate_(delegate)
     print("🚀 App launched")
     app.run()
-
-    # How to terminate:
-    # press "quit" button
-    # pkill -f your_script_name.py
