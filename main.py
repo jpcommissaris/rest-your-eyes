@@ -16,6 +16,46 @@ from Cocoa import (
     NSColor
 )
 from AppKit import NSFontWeightRegular, NSPopover, NSViewController, NSMenu
+import Quartz
+
+
+# todo make customizable
+time = 1 * 60
+
+class HoverButton(NSButton):
+    def mouseEntered_(self, event):
+        self.layer().setBackgroundColor_(NSColor.selectedMenuItemColor().CGColor())
+        self.layer().setCornerRadius_(6.0) 
+        self.layer().setMasksToBounds_(True) 
+
+    def mouseExited_(self, event):
+        self.layer().setBackgroundColor_(Quartz.CGColorCreateGenericRGB(0, 0, 0, 0))
+        self.layer().setCornerRadius_(0) 
+        self.layer().setMasksToBounds_(True) 
+
+    # -- STYLING --
+def style_as_menu_button(btn):
+    btn.setBordered_(False)
+    btn.setBezelStyle_(0)  # Flat
+    btn.setFont_(NSFont.menuFontOfSize_(13))
+    btn.setAlignment_(16)   # Left align
+
+    btn.setWantsLayer_(True)
+    btn.layer().setBackgroundColor_(Quartz.CGColorCreateGenericRGB(0, 0, 0, 0))
+
+    tracking = objc.lookUpClass("NSTrackingArea").alloc().initWithRect_options_owner_userInfo_(
+        btn.bounds(),
+        0x01 | 0x10 | 0x20,  # mouseEnteredAndExited | activeAlways | inVisibleRect
+        btn,
+        None
+    )
+    btn.addTrackingArea_(tracking)
+
+def style_as_menu_divider(view: NSView, width=196, height=1):
+    view.setFrame_(NSMakeRect(0, 0, width, height))
+    view.setWantsLayer_(True)
+    view.layer().setBackgroundColor_(NSColor.separatorColor().CGColor())
+    return view
 
 
 class AppDelegate(NSObject):
@@ -32,7 +72,7 @@ class AppDelegate(NSObject):
         self.status_item.button().setAction_("togglePopover:")
 
         # Initialize timer values
-        self.time_remaining = 20 * 60
+        self.time_remaining = time
         self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             1.0, self, "updateTimer:", None, True
         )
@@ -44,12 +84,15 @@ class AppDelegate(NSObject):
         self.updateStatusIcon()
         print("👁️ Init state")
     
-    def style_as_menu_button(self, btn):
-        btn.setBordered_(False)
-        btn.setBezelStyle_(0)  # Flat
-        btn.setFont_(NSFont.menuFontOfSize_(13))
-        btn.setAlignment_(0)   # Left align
 
+
+    def updateStatusIcon(self):
+        symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
+        icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(symbol, None)
+        config = objc.lookUpClass("NSImageSymbolConfiguration").configurationWithPointSize_weight_(18, NSFontWeightRegular)
+        icon = icon.imageWithSymbolConfiguration_(config)
+        icon.setTemplate_(False)
+        self.status_item.button().setImage_(icon)
     def createPopover(self):
         self.popover = NSPopover.alloc().init()
         self.popover.setBehavior_(1)  # Transient
@@ -59,42 +102,48 @@ class AppDelegate(NSObject):
         controller = NSViewController.alloc().init()
 
         # Container view
-        container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 220, 100))
+        container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 210, 100))
 
         # Timer label
-        self.timer_text_field = NSTextField.alloc().initWithFrame_(NSMakeRect(12, 60, 200, 24))
+        self.timer_text_field = NSTextField.alloc().initWithFrame_(NSMakeRect(12, 60, 196, 24))
         self.timer_text_field.setBezeled_(False)
         self.timer_text_field.setDrawsBackground_(False)
         self.timer_text_field.setEditable_(False)
         self.timer_text_field.setSelectable_(False)
         self.timer_text_field.setFont_(NSFont.menuFontOfSize_(13))
         self.timer_text_field.setAlignment_(0)
-        self.timer_text_field.setStringValue_("Eyes will rest in... 20:00")
+        self.timer_text_field.setStringValue_(f"Eyes will rest in...{10 * ' '} 20:00")
         container.addSubview_(self.timer_text_field)
 
         # Pause/resume button
-        self.pause_button = NSButton.alloc().initWithFrame_(NSMakeRect(12, 30, 100, 24))
-        self.pause_button.setTitle_("Pause")
+        self.pause_button = HoverButton.alloc().initWithFrame_(NSMakeRect(10.5, 40, 190.5, 24))
+        self.pause_button.setTitle_(" Pause ")
         self.pause_button.setTarget_(self)
         self.pause_button.setAction_("togglePause:")
-        self.style_as_menu_button(self.pause_button)
+        style_as_menu_button(self.pause_button)
         container.addSubview_(self.pause_button)
+        
+        divider = NSView.alloc().init()
+        style_as_menu_divider(divider)
+        divider.setFrameOrigin_((8, 35))
+        container.addSubview_(divider)
 
         # Reset button
-        self.reset_button = NSButton.alloc().initWithFrame_(NSMakeRect(120, 30, 80, 24))
+        self.reset_button = NSButton.alloc().initWithFrame_(NSMakeRect(14, 5, 80, 24))
         self.reset_button.setTitle_("Reset")
         self.reset_button.setTarget_(self)
         self.reset_button.setAction_("toggleReset:")
-        self.reset_button.setHidden_(True)
-        self.style_as_menu_button(self.reset_button)
+        # self.reset_button.setHidden_(True)
+        style_as_menu_button(self.reset_button)
         container.addSubview_(self.reset_button)
 
+
         # Quit button
-        self.quit_button = NSButton.alloc().initWithFrame_(NSMakeRect(12, 5, 80, 20))
+        self.quit_button = NSButton.alloc().initWithFrame_(NSMakeRect(166, 5, 80, 24))
         self.quit_button.setTitle_("Quit")
         self.quit_button.setTarget_(self)
         self.quit_button.setAction_("terminate:")
-        self.style_as_menu_button(self.quit_button)
+        style_as_menu_button(self.quit_button)
         container.addSubview_(self.quit_button)
 
         controller.setView_(container)
@@ -110,20 +159,22 @@ class AppDelegate(NSObject):
                 self.status_item.button(),
                 3  # NSMaxYEdge
             )
+            # 👇 Force popover to accept events
+            NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+            self.popover.contentViewController().view().window().makeKeyWindow()
 
     @objc.IBAction
     def togglePause_(self, sender):
         self.is_paused = not self.is_paused
-        self.pause_button.setTitle_("Resume" if self.is_paused else "Pause")
-        self.reset_button.setHidden_(not self.is_paused)
+        self.pause_button.setTitle_(" Resume " if self.is_paused else " Pause ")
+        # self.reset_button.setHidden_(not self.is_paused)
         self.updateStatusIcon()
 
     @objc.IBAction
     def toggleReset_(self, sender):
-        self.time_remaining = 20 * 60
+        self.time_remaining = time
         self.is_paused = False
-        self.pause_button.setTitle_("Pause")
-        self.reset_button.setHidden_(True)
+        self.pause_button.setTitle_(" Pause ")
         self.updateStatusIcon()
 
     @objc.IBAction
@@ -132,20 +183,15 @@ class AppDelegate(NSObject):
             self.time_remaining -= 1
 
         minutes, seconds = divmod(self.time_remaining, 60)
-        time_str = f"Eyes will rest in... {minutes:02}:{seconds:02}"
+        time_str = f"Eyes will rest in... {10 * ' '}{minutes:02}:{seconds:02}"
         self.timer_text_field.setStringValue_(time_str)
 
         if self.time_remaining == 0 and self.timer:
-            self.timer.invalidate()
-            self.timer = None
+            self.time_remaining = time
+    @objc.IBAction
+    def terminate_(self, sender):
+        NSApplication.sharedApplication().terminate_(self)
 
-    def updateStatusIcon(self):
-        symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
-        icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(symbol, None)
-        config = objc.lookUpClass("NSImageSymbolConfiguration").configurationWithPointSize_weight_(18, NSFontWeightRegular)
-        icon = icon.imageWithSymbolConfiguration_(config)
-        icon.setTemplate_(False)
-        self.status_item.button().setImage_(icon)
 
 
 if __name__ == "__main__":
