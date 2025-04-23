@@ -35,16 +35,29 @@ class AppDelegate(NSObject):
         padded = f"Eyes will rest in...{' ' * 10}20:00"
         self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
 
+        # Conditional divider
+        self.divider1 = NSMenuItem.separatorItem()
+        self.divider1.setTarget_(self)
+        self.divider1.setHidden_(True)
+
         # Pause resume item
         self.pause_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Pause", "togglePause:", "")
         self.pause_item.setTarget_(self)
+
+        # Reset item
+        self.reset_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Reset", "toggleReset:", "")
+        self.reset_item.setTarget_(self) 
+        self.reset_item.setHidden_(True)
+ 
 
         # Quit item
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit", "terminate:", "")
 
         # Add menu items
         self.menu.addItem_(self.timer_item)
-        self.menu.addItem_(self.pause_item)
+        self.menu.addItem_(self.divider1)
+        self.menu.addItem_(self.pause_item) 
+        self.menu.addItem_(self.reset_item)
         self.menu.addItem_(NSMenuItem.separatorItem())
         self.menu.addItem_(quit_item)
 
@@ -64,6 +77,12 @@ class AppDelegate(NSObject):
     def togglePause_(self, sender):
         self.is_paused = not self.is_paused
         self.updateStatusIcon()
+        self.resetClock()
+    
+    @objc.IBAction
+    def toggleReset_(self, sender):
+        self.is_paused = False
+        self.updateStatusIcon()
 
     def updateStatusIcon(self):
         symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
@@ -76,7 +95,12 @@ class AppDelegate(NSObject):
         icon.setTemplate_(False)
 
         self.status_item.button().setImage_(icon)
+        self.reset_item.setHidden_(not self.is_paused)
+        self.divider1.setHidden_(not self.is_paused)
         print(f"👁️ Updated Menu to {'PAUSED' if self.is_paused else 'ACTIVE'} state")
+
+    def resetClock(self): 
+        pass
 
 if __name__ == "__main__":
     print("🫡 Booting up...")
