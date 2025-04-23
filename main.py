@@ -11,6 +11,7 @@ from Cocoa import (
     NSImage,
 )
 from AppKit import NSFontWeightRegular
+from Foundation import NSTimer
 
 
 class AppDelegate(NSObject):
