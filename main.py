@@ -28,7 +28,6 @@ class AppDelegate(NSObject):
 
         # Create status bar item
         self.status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
-        self.status_item.button().setTitle_("👁️")
         self.status_item.button().setTarget_(self)
         self.status_item.button().setAction_("togglePopover:")
 
@@ -41,6 +40,9 @@ class AppDelegate(NSObject):
         # Build the popover and its content
         self.createPopover()
         print("👁️ Popover ready")
+        # Init state
+        self.updateStatusIcon()
+        print("👁️ Init state")
 
     def createPopover(self):
         self.popover = NSPopover.alloc().init()
