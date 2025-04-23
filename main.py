@@ -32,6 +32,17 @@ class AppDelegate(NSObject):
         # Set up menu
         self.menu = NSMenu.alloc().init() 
 
+        # Setup timer
+        self.time_remaining = 20 * 60  # 20 minutes in seconds
+
+        self.timer = NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
+            1.0,                
+            self,               
+            "updateTimer:",     
+            None,
+            True                # repeats
+        )
+
         # Timer item
         padded = f"Eyes will rest in...{' ' * 10}20:00"
         self.timer_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(padded, "noop:", "")
@@ -84,6 +95,22 @@ class AppDelegate(NSObject):
     def toggleReset_(self, sender):
         self.is_paused = False
         self.updateStatusIcon()
+
+    @objc.IBAction
+    def updateTimer_(self, _):
+        if self.time_remaining > 0:
+            self.time_remaining -= 1
+        else:
+            self.timer.invalidate()
+            self.timer = None
+
+        minutes = self.time_remaining // 60
+        seconds = self.time_remaining % 60
+        time_str = f"{minutes:02d}:{seconds:02d}"
+
+        # Update the menu item
+        padded = f"Eyes will rest in...{' ' * 10}{time_str}"
+        self.timer_item.setTitle_(padded)
 
     def updateStatusIcon(self):
         symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
