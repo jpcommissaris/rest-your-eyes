@@ -43,6 +43,12 @@ class AppDelegate(NSObject):
         # Init state
         self.updateStatusIcon()
         print("👁️ Init state")
+    
+    def style_as_menu_button(self, btn):
+        btn.setBordered_(False)
+        btn.setBezelStyle_(0)  # Flat
+        btn.setFont_(NSFont.menuFontOfSize_(13))
+        btn.setAlignment_(0)   # Left align
 
     def createPopover(self):
         self.popover = NSPopover.alloc().init()
@@ -71,6 +77,7 @@ class AppDelegate(NSObject):
         self.pause_button.setTitle_("Pause")
         self.pause_button.setTarget_(self)
         self.pause_button.setAction_("togglePause:")
+        self.style_as_menu_button(self.pause_button)
         container.addSubview_(self.pause_button)
 
         # Reset button
@@ -79,6 +86,7 @@ class AppDelegate(NSObject):
         self.reset_button.setTarget_(self)
         self.reset_button.setAction_("toggleReset:")
         self.reset_button.setHidden_(True)
+        self.style_as_menu_button(self.reset_button)
         container.addSubview_(self.reset_button)
 
         # Quit button
@@ -86,6 +94,7 @@ class AppDelegate(NSObject):
         self.quit_button.setTitle_("Quit")
         self.quit_button.setTarget_(self)
         self.quit_button.setAction_("terminate:")
+        self.style_as_menu_button(self.quit_button)
         container.addSubview_(self.quit_button)
 
         controller.setView_(container)
