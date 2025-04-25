@@ -21,6 +21,7 @@ To bundle the app for distribution, use the `app.py` script. This will package t
 
 ## Requirements
 - Python 3.x
+- Add venv (recommended): `python3 -m venv venv`
 - Required dependencies (install via `pip`):
   ```bash
   pip install -r requirements.txt
