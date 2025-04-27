@@ -14,7 +14,6 @@ from Cocoa import (
     NSView,
     NSButton,
     NSColor,
-    NSUserNotificationCenter,
 )
 from AppKit import NSFontWeightRegular, NSPopover, NSViewController, NSMenu
 import Quartz
