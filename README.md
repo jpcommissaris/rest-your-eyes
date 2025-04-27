@@ -27,6 +27,7 @@ To bundle the app for distribution, use the `app.py` script. This will package t
   pip install -r requirements.txt
   ```
 - Allow the app in "focus" mode to make sure you see notifications
+- IMPORTANT: Make sure in system settings, you give this app permission to send banner notifications. Enable sound. Set "show previews" to "always"
 
 ## Usage
 1. Clone the repository.
