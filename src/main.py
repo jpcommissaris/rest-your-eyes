@@ -18,7 +18,11 @@ from Cocoa import (
 from AppKit import NSFontWeightRegular, NSPopover, NSViewController, NSMenu
 import Quartz
 import UserNotifications
-
+from AppKit import (
+    NSWorkspace,
+    NSWorkspaceWillSleepNotification,
+    NSWorkspaceDidWakeNotification,
+)
 
 # todo make customizable
 time = 20 * 60
@@ -93,6 +97,7 @@ class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
         print("🧘‍♂️ Did finish launch")
         self.is_paused = False
+        self.paused_on_sleep = False
 
         # Create status bar item
         self.status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(
@@ -114,7 +119,20 @@ class AppDelegate(NSObject):
         print("👁️ Popover ready")
         # Init state
         self.updateStatusIcon()
+        # Register sleep/awake listener
+        self.registerSleepObserver()
         print("👁️ Init state")
+
+    def registerSleepObserver(self):
+        nc = NSWorkspace.sharedWorkspace().notificationCenter()
+
+        nc.addObserver_selector_name_object_(
+            self, "systemWillSleep:", NSWorkspaceWillSleepNotification, None
+        )
+
+        nc.addObserver_selector_name_object_(
+            self, "systemDidWake:", NSWorkspaceDidWakeNotification, None
+        )
 
     def updateStatusIcon(self):
         symbol = "eye.slash.circle.fill" if self.is_paused else "eye.circle.fill"
@@ -199,12 +217,15 @@ class AppDelegate(NSObject):
             NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
             self.popover.contentViewController().view().window().makeKeyWindow()
 
-    @objc.IBAction
-    def togglePause_(self, sender):
+    def togglePauseInternal(self):
         self.is_paused = not self.is_paused
         self.pause_button.setTitle_(" Resume " if self.is_paused else " Pause ")
         # self.reset_button.setHidden_(not self.is_paused)
         self.updateStatusIcon()
+
+    @objc.IBAction
+    def togglePause_(self, sender):
+        self.togglePauseInternal()
 
     @objc.IBAction
     def toggleReset_(self, sender):
@@ -230,6 +251,19 @@ class AppDelegate(NSObject):
     def terminate_(self, sender):
         NSApplication.sharedApplication().terminate_(self)
         # pkill -f main.py
+
+    @objc.IBAction
+    def systemWillSleep_(self, notification):
+        print("💤 System going to sleep — pausing timer")
+        self.paused_on_sleep = True
+        self.togglePauseInternal()
+
+    @objc.IBAction
+    def systemDidWake_(self, notification):
+        if self.paused_on_sleep:
+            print("🌞 System woke up — resuming timer")
+            self.paused_on_sleep = False
+            self.togglePauseInternal()
 
 
 if __name__ == "__main__":
