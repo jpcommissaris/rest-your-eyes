@@ -5,3 +5,5 @@ pyobjc
 # pyobjc-framework-UserNotifications
 # pyobjc-framework-AppKit
 py2app
+setuptools
+

@@ -24,7 +24,9 @@ python main.py
 ```
 
 ### Bundling the App
-- To bundle the app for distribution, use the `setup.py` script. This will package the application for macOS.
+- The app is bundled for distribution with`setup.py` & `codesign`. This will package the application for macOS. Use the provided build script:
+- `chmod +x build.sh`
+- `./build.sh`
 
 
 
