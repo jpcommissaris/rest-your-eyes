@@ -14,6 +14,7 @@ To run the app in development mode, use the `main.py` script:
 
 - Python 3.x
 - Add venv (recommended): `python3 -m venv venv`
+- `source venv/bin/activate`
 - Required dependencies (install via `pip`):
   ```bash
   pip install -r requirements.txt
@@ -35,3 +36,8 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 ---  
 Stay healthy and take regular breaks with **Rest Your Eyes**!  
+
+
+## Roadmap ideas:
+- Full window display (overlay) when timer runs out
+- Setting (preferences) window to change time

@@ -23,6 +23,7 @@ from AppKit import (
     NSWorkspaceWillSleepNotification,
     NSWorkspaceDidWakeNotification,
 )
+from PyObjCTools.AppHelper import callLater
 
 # todo make customizable
 time = 20 * 60
@@ -62,6 +63,22 @@ def style_as_menu_button(btn):
         )
     )
     btn.addTrackingArea_(tracking)
+
+
+def style_as_icon_button(btn):
+    btn.setBezelStyle_(0)  # No bezel
+    btn.setBordered_(False)
+    btn.setImagePosition_(3)  # Image only
+    icon = NSImage.imageWithSystemSymbolName_accessibilityDescription_(
+        "gearshape.fill", None
+    )
+    config = objc.lookUpClass(
+        "NSImageSymbolConfiguration"
+    ).configurationWithPointSize_weight_(14, NSFontWeightRegular)
+    icon = icon.imageWithSymbolConfiguration_(config)
+    icon.setTemplate_(True)
+    btn.setImage_(icon)
+    btn.setContentTintColor_(NSColor.whiteColor())
 
 
 def style_as_menu_divider(view: NSView, width=196, height=1):
@@ -145,17 +162,16 @@ class AppDelegate(NSObject):
         self.status_item.button().setImage_(icon)
 
     def createPopover(self):
+        # -- Init popover --
         self.popover = NSPopover.alloc().init()
         self.popover.setBehavior_(1)  # Transient
         self.popover.setAnimates_(True)
 
-        # View Controller
+        # -- View Controller & Container --
         controller = NSViewController.alloc().init()
-
-        # Container view
         container = NSView.alloc().initWithFrame_(NSMakeRect(0, 0, 210, 100))
 
-        # Timer label
+        # -- Timer label --
         self.timer_text_field = NSTextField.alloc().initWithFrame_(
             NSMakeRect(12, 60, 196, 24)
         )
@@ -168,7 +184,7 @@ class AppDelegate(NSObject):
         self.timer_text_field.setStringValue_(f"Eyes will rest in...{10 * ' '} 20:00")
         container.addSubview_(self.timer_text_field)
 
-        # Pause/resume button
+        # -- Pause/resume button --
         self.pause_button = HoverButton.alloc().initWithFrame_(
             NSMakeRect(10.5, 40, 190.5, 24)
         )
@@ -183,7 +199,7 @@ class AppDelegate(NSObject):
         divider.setFrameOrigin_((8, 35))
         container.addSubview_(divider)
 
-        # Reset button
+        # -- Reset button --
         self.reset_button = NSButton.alloc().initWithFrame_(NSMakeRect(14, 5, 80, 24))
         self.reset_button.setTitle_("Reset")
         self.reset_button.setTarget_(self)
@@ -193,13 +209,24 @@ class AppDelegate(NSObject):
         container.addSubview_(self.reset_button)
 
         # Quit button
-        self.quit_button = NSButton.alloc().initWithFrame_(NSMakeRect(166, 5, 80, 24))
-        self.quit_button.setTitle_("Quit")
-        self.quit_button.setTarget_(self)
-        self.quit_button.setAction_("terminate:")
-        style_as_menu_button(self.quit_button)
-        container.addSubview_(self.quit_button)
+        # self.quit_button = NSButton.alloc().initWithFrame_(NSMakeRect(166, 5, 80, 24))
+        # self.quit_button.setTitle_("Quit")
+        # self.quit_button.setTarget_(self)
+        # self.quit_button.setAction_("terminate:")
+        # style_as_menu_button(self.quit_button)
+        # container.addSubview_(self.quit_button)
 
+        # -- Settings Button --
+        self.settings_button = HoverButton.alloc().initWithFrame_(
+            NSMakeRect(175, 7.5, 20, 20)
+        )
+        style_as_icon_button(self.settings_button)
+        self.settings_button.setTitle_("")
+        self.settings_button.setTarget_(self)
+        self.settings_button.setAction_("openSettings:")
+        container.addSubview_(self.settings_button)
+
+        # -- Final Step: Add controller to popover --
         controller.setView_(container)
         self.popover.setContentViewController_(controller)
 
@@ -264,6 +291,10 @@ class AppDelegate(NSObject):
             print("🌞 System woke up — resuming timer")
             self.paused_on_sleep = False
             self.togglePauseInternal()
+
+    @objc.IBAction
+    def openSettings_(self, notification):
+        print("hello world")
 
 
 if __name__ == "__main__":
