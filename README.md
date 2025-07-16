@@ -21,7 +21,7 @@ To run the app in development mode, use the `main.py` script:
   ```
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 ### Bundling the App
