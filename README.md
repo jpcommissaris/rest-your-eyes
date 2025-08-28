@@ -1,6 +1,6 @@
 # Rest Your Eyes
 
-**Rest Your Eyes** is a macOS menu bar application designed to remind you to take regular breaks and rest your eyes. This app helps promote better eye health and productivity by encouraging you to follow the 20-20-20 rule.
+**Rest Your Eyes** is a macOS menu bar application designed to remind you to take regular breaks and rest your eyes. This app helps promote better eye health and productivity by encouraging you to follow the 20-20-20 rule. The production code is Swift UI & lives in a private repo
 
 **Rest Your Eyes** is available on the App Store: 
 
